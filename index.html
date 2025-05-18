@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcard Viewer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #181a1b;
+      color: #f3f3f3;
+      margin: 0;
+      min-height: 100vh;
+      transition: background 0.4s, color 0.4s;
+    }
+    .main-layout {
+      display: flex;
+      width: 100vw;
+      min-height: 100vh;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 32px;
+    }
+    .side-features {
+      width: 240px;
+      min-width: 180px;
+      max-width: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 2.5em 1.2em 2em 1.2em;
+      gap: 2.2em;
+      color: #bdbdbd;
+      font-size: 1.05rem;
+      background: rgba(35,39,47,0.92);
+      border-radius: 18px;
+      margin: 32px 0 32px 0;
+      box-shadow: 0 2px 16px #0002;
+      border: 1.5px solid #23272f;
+    }
+    .side-features.left { border-right: 2px solid #222; }
+    .side-features.right { border-left: 2px solid #222; }
+    .side-features .feature-group {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2em;
+      margin-bottom: 1.5em;
+    }
+    .side-features .feature-btn {
+      background: linear-gradient(90deg,#23272f 60%,#1e88e5 100%);
+      color: #7ee787;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 0.9em 1.2em 0.9em 2.5em;
+      margin: 0.7em 0;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s, color 0.3s, box-shadow 0.2s;
+      width: 100%;
+      text-align: left;
+      position: relative;
+      box-shadow: 0 2px 8px #0001;
+    }
+    .side-features .feature-btn:last-child {
+      margin-bottom: 0.2em;
+    }
+    .side-features .feature-btn:hover {
+      background: linear-gradient(90deg,#0077ff 60%,#4caf50 100%);
+      color: #fff;
+      box-shadow: 0 4px 16px #0077ff33;
+    }
+    .side-features .feature-icon {
+      position: absolute;
+      left: 0.7em;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.3em;
+      pointer-events: none;
+    }
+    .side-features .section-title {
+      font-weight: bold;
+      color: #ffb300;
+      font-size: 1.13rem;
+      margin-top: 0.7em;
+      margin-bottom: 0.7em;
+      letter-spacing: 0.01em;
+      text-align: center;
+    }
+    .side-features .section-sep {
+      width: 80%;
+      height: 1.5px;
+      background: linear-gradient(90deg,#0077ff,#4caf50);
+      border-radius: 1px;
+      margin: 1.2em 0 0.2em 0;
+      opacity: 0.5;
+    }
+    .side-clock {
+      font-size: 1.35rem;
+      color: #7ee787;
+      font-family: 'Segoe UI Mono', 'Consolas', monospace;
+      margin-bottom: 0.7em;
+      letter-spacing: 0.04em;
+      text-align: center;
+      font-weight: 600;
+      text-shadow: 0 2px 8px #0006;
+    }
+    .floating-symbols {
+      position: fixed;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 5;
+      display: block;
+    }
+    .floating-static-icon {
+      position: fixed;
+      will-change: transform;
+      pointer-events: none;
+      user-select: none;
+      filter: drop-shadow(0 2px 6px #0005);
+      transition: opacity 0.3s;
+      z-index: 6;
+    }
+    .footer {
+      text-align: center;
+      color: #bdbdbd;
+      font-size: 1.35rem;
+      margin: 3.5rem auto 1.2rem auto;
+      padding: 0.7em 2vw 0.7em 2vw;
+      max-width: 600px;
+      background: none;
+      display: block;
+    }
+    .app {
+      max-width: 600px;
+      min-width: 340px;
+      width: 100%;
+      margin: 32px 0 32px 0;
+      padding: 32px 18px 32px 18px;
+      background: #23272f;
+      border-radius: 20px;
+      box-shadow: 0 4px 32px #0003;
+      text-align: center;
+      transition: background 0.4s, color 0.4s;
+      z-index: 2;
+    }
+    .flashcard {
+      width: 300px;
+      height: 200px;
+      margin: 1rem auto;
+      perspective: 1000px;
+      cursor: pointer;
+      position: relative;
+    }
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      transition: transform 0.6s cubic-bezier(.4,2,.3,1);
+      transform-style: preserve-3d;
+    }
+    .flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-front, .card-back {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      border-radius: 12px;
+      background: #fff;
+      color: #23272f;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+      backface-visibility: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.15rem;
+      padding: 1rem;
+      box-sizing: border-box;
+      transition: background 0.4s, color 0.4s;
+    }
+    .dark .card-front, .dark .card-back {
+      background: #23272f;
+      color: #f3f3f3;
+    }
+    .card-back {
+      transform: rotateY(180deg);
+    }
+    .known {
+      border: 3px solid #4caf50;
+    }
+    .progress-bar-container {
+      width: 80%;
+      height: 18px;
+      background: #e0e0e0;
+      border-radius: 9px;
+      margin: 1rem auto 0.5rem auto;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #0077ff, #4caf50);
+      border-radius: 9px 0 0 9px;
+      transition: width 0.4s cubic-bezier(.4,2,.3,1);
+    }
+    .progress-label {
+      position: absolute;
+      right: 12px;
+      top: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      font-size: 0.95rem;
+      color: #333;
+      font-weight: 500;
+    }
+    .app.dark .progress-bar-container {
+      background: #333;
+    }
+    .app.dark .progress-label {
+      color: #f0f0f0;
+    }
+    .buttons {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.1em;
+      justify-content: center;
+    }
+    button {
+      margin: 0 8px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #0077ff;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #005bcc;
+    }
+    .status {
+      margin-top: 1rem;
+    }
+    select {
+      padding: 6px 12px;
+      font-size: 1rem;
+      margin: 0 10px;
+    }
+    .add-custom {
+      margin-top: 2em;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+      align-items: center;
+    }
+    .add-custom input {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      font-size: 1rem;
+      margin-bottom: 0.2em;
+      width: 90%;
+      max-width: 320px;
+    }
+    .add-custom button {
+      width: 90%;
+      max-width: 320px;
+      margin: 0.3rem 0;
+    }
+    @media (max-width: 1100px) {
+      .side-features { display: none; }
+      .main-layout { flex-direction: column; align-items: center; gap: 0; }
+      .app { max-width: 98vw; min-width: 0; padding: 18px 2vw 32px 2vw; border-radius: 16px; }
+    }
+    @media (max-width: 600px) {
+      .app { padding: 12px 2vw 32px 2vw; margin: 0; border-radius: 0; }
+    }
+    .tip-box {
+      background: #23272f;
+      color: #ffb300;
+      border-radius: 10px;
+      padding: 1em 1.2em;
+      margin: 1.2em 0 0 0;
+      font-size: 1.08rem;
+      box-shadow: 0 2px 8px #0002;
+      text-align: center;
+      font-style: italic;
+      border: 1.5px solid #444;
+    }
+    .feature-desc {
+      color: #7ee787;
+      font-size: 0.98em;
+      margin-bottom: 0.5em;
+      margin-top: -0.7em;
+      text-align: left;
+      width: 100%;
+      padding-left: 2.2em;
+      opacity: 0.85;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="floating-symbols"></div>
+  <div class="main-layout">
+    <div class="side-features left">
+      <div class="feature-group">
+        <div class="section-title">✨ Features</div>
+        <button class="feature-btn" id="shuffle-btn"><span class="feature-icon">🔀</span>Shuffle</button>
+        <button class="feature-btn" id="timer-btn"><span class="feature-icon">⏰</span>Timer</button>
+        <button class="feature-btn" id="stop-timer-btn"><span class="feature-icon">⏹️</span>Stop Timer</button>
+        <button class="feature-btn" id="pause-timer-btn"><span class="feature-icon">⏸️</span>Pause Timer</button>
+        <button class="feature-btn" id="reset-timer-btn"><span class="feature-icon">🔄</span>Reset Timer</button>
+        <button class="feature-btn" id="bookmarks-btn"><span class="feature-icon">⭐</span>Bookmarks</button>
+      </div>
+      <div class="section-sep"></div>
+    </div>
+    <div class="app" id="app">
+      <h1>Flashcard Viewer</h1>
+      <div>
+        <select id="topic-select"></select>
+        <button id="theme-toggle">Toggle Theme</button>
+      </div>
+      <div class="flashcard" id="flashcard">
+        <div class="card-inner">
+          <div class="card-front" id="card-front"></div>
+          <div class="card-back" id="card-back"></div>
+        </div>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progress-bar"></div>
+        <span class="progress-label" id="progress-label"></span>
+      </div>
+      <div class="buttons">
+        <button id="prev">Previous</button>
+        <button id="next">Next</button>
+        <button id="mark-known">Mark as Known</button>
+        <button id="mark-unknown">Mark as Unknown</button>
+        <button id="reset">Reset Progress</button>
+        <button id="bookmark">Bookmark</button>
+      </div>
+      <div class="status" id="status"></div>
+      <div class="add-custom">
+        <input type="text" id="custom-question" placeholder="Enter question">
+        <input type="text" id="custom-answer" placeholder="Enter answer">
+        <button id="add-custom">Add Flashcard</button>
+      </div>
+      <div class="timer" id="timer"></div>
+      <div class="confetti" id="confetti"></div>
+    </div>
+    <div class="side-features right">
+      <div class="feature-group">
+        <div class="side-clock" id="side-clock"></div>
+        <div id="side-date" style="text-align:center;color:#7ee787;font-size:1.05em;margin-bottom:0.5em;"></div>
+        <button id="clock-format-btn" style="margin:0.5em auto 0.5em auto;display:block;padding:0.4em 1em;border-radius:8px;background:#23272f;color:#ffb300;border:1px solid #444;cursor:pointer;font-size:0.98em;">Switch to 12-hour</button>
+      </div>
+      <div class="section-title">�� Quick Stats</div>
+      <div id="side-analytics"></div>
+      <div class="tip-box" id="tip-box"></div>
+      <div class="section-sep"></div>
+      <div class="feature-group">
+        <button id="confetti-btn" style="
+          cursor: pointer;
+          background: #23272f;
+          border: 1.5px solid #ffb300;
+          padding: 0.8em 0;
+          margin: 0.5em 0 1.2em 0;
+          font: 1.08rem 'Segoe UI', Arial, sans-serif;
+          display: block;
+          width: 100%;
+          text-align: center;
+          color: #ffb300;
+          border-radius: 12px;
+          transition: background 0.2s, color 0.2s;
+        "
+        onmouseover="this.style.background='#ffb300';this.style.color='#23272f';"
+        onmouseout="this.style.background='#23272f';this.style.color='#ffb300';"
+        >🎉 Celebrate</button>
+      </div>
+    </div>
+  </div>
+  <footer class="footer">Owned by Abhiyanshu Anand</footer>
+  <script>
+    // Flashcard data
+    const topics = {
+      React: [
+        { question: 'What is JSX?', answer: 'JSX stands for JavaScript XML.' },
+        { question: 'What is useState?', answer: 'A React hook for managing local state.' },
+        { question: 'What is a React component?', answer: 'A reusable piece of UI.' },
+        { question: 'What is useEffect?', answer: 'A React hook for side effects.' },
+        { question: 'What is props?', answer: 'Inputs to a React component.' },
+      ],
+      JavaScript: [
+        { question: 'What is a closure?', answer: 'A function with access to its outer function scope even after the outer function returns.' },
+        { question: 'What is hoisting?', answer: "Hoisting is JavaScript's default behavior of moving declarations to the top." },
+        { question: 'What is let vs var?', answer: 'let is block scoped, var is function scoped.' },
+        { question: 'What is an arrow function?', answer: 'A concise way to write functions using =>.' },
+        { question: 'What is the DOM?', answer: 'Document Object Model, the structure of HTML as objects.' },
+      ],
+      HTML: [
+        { question: 'What is a semantic tag?', answer: 'HTML tags that describe their meaning to both browser and developer.' },
+        { question: 'What does <meta> do?', answer: 'Provides metadata about the HTML document.' },
+        { question: 'What is <section>?', answer: 'A semantic element for grouping related content.' },
+        { question: 'What is <input>?', answer: 'An element to get user input.' },
+        { question: 'What is the <head> tag?', answer: 'Contains meta-information about the document.' },
+      ],
+      Custom: []
+    };
+    let selectedTopic = Object.keys(topics)[0];
+    let index = 0;
+    let known = [];
+    let bookmarks = [];
+    let showBookmarks = false;
+    let darkMode = false;
+    let flipped = false;
+    let timer = null;
+    let timerLeft = 0;
+    let timerPaused = false;
+    let timerInitial = 300;
+    // Populate topic selector
+    function populateTopics() {
+      const topicSelect = document.getElementById('topic-select');
+      topicSelect.innerHTML = '';
+      Object.keys(topics).forEach(topic => {
+        const opt = document.createElement('option');
+        opt.value = topic;
+        opt.textContent = topic;
+        topicSelect.appendChild(opt);
+      });
+      topicSelect.value = selectedTopic;
+    }
+    // Render flashcard
+    function renderCard() {
+      const cards = showBookmarks
+        ? bookmarks.filter(b => b.topic === selectedTopic).map(b => topics[selectedTopic][b.index])
+        : topics[selectedTopic];
+      if (!cards.length) {
+        document.getElementById('card-front').textContent = 'No cards';
+        document.getElementById('card-back').textContent = '';
+        return;
+      }
+      const card = cards[index % cards.length];
+      document.getElementById('card-front').textContent = card.question;
+      document.getElementById('card-back').textContent = card.answer;
+      const flashcard = document.getElementById('flashcard');
+      flashcard.className = 'flashcard' + (flipped ? ' flipped' : '') + (known.includes(index) ? ' known' : '');
+    }
+    // Render progress
+    function renderProgress() {
+      const cards = showBookmarks
+        ? bookmarks.filter(b => b.topic === selectedTopic).map(b => topics[selectedTopic][b.index])
+        : topics[selectedTopic];
+      const percent = Math.round((known.length / cards.length) * 100);
+      document.getElementById('progress-bar').style.width = percent + '%';
+      document.getElementById('progress-label').textContent = percent + '%';
+      document.getElementById('status').textContent = `Known: ${known.length} / ${cards.length}`;
+      document.getElementById('side-analytics').textContent = `Known: ${known.length} / ${cards.length}\nCard: ${index+1} / ${cards.length}`;
+    }
+    // Shuffle
+    document.getElementById('shuffle-btn').onclick = () => {
+      const cards = topics[selectedTopic];
+      for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];}
+      index = 0;
+      flipped = false;
+      renderCard();
+      renderProgress();
+    };
+    // Timer
+    document.getElementById('timer-btn').onclick = () => {
+      if (timer) clearInterval(timer);
+      timerLeft = timerInitial;
+      timerPaused = false;
+      document.getElementById('pause-timer-btn').textContent = '⏸️ Pause Timer';
+      timer = setInterval(() => {
+        if (!timerPaused) {
+          timerLeft--;
+          document.getElementById('timer').textContent = `Time left: ${timerLeft}s`;
+          if (timerLeft <= 0) {
+            clearInterval(timer);
+            timer = null;
+            document.getElementById('timer').textContent = 'Session over!';
+          }
+        }
+      }, 1000);
+      document.getElementById('timer').textContent = `Time left: ${timerLeft}s`;
+    };
+    document.getElementById('stop-timer-btn').onclick = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+      timerPaused = false;
+      document.getElementById('timer').textContent = '';
+      document.getElementById('pause-timer-btn').textContent = '⏸️ Pause Timer';
+    };
+    document.getElementById('pause-timer-btn').onclick = () => {
+      if (!timer) return;
+      timerPaused = !timerPaused;
+      document.getElementById('pause-timer-btn').textContent = timerPaused ? '▶️ Resume Timer' : '⏸️ Pause Timer';
+    };
+    document.getElementById('reset-timer-btn').onclick = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+      timerLeft = timerInitial;
+      timerPaused = false;
+      document.getElementById('timer').textContent = `Time left: ${timerLeft}s`;
+      document.getElementById('pause-timer-btn').textContent = '⏸️ Pause Timer';
+    };
+    // Bookmarks
+    document.getElementById('bookmarks-btn').onclick = () => {
+      showBookmarks = !showBookmarks;
+      index = 0;
+      renderCard();
+      renderProgress();
+    };
+    // Theme
+    document.getElementById('theme-toggle').onclick = () => {
+      darkMode = !darkMode;
+      document.body.classList.toggle('dark', darkMode);
+      document.getElementById('app').classList.toggle('dark', darkMode);
+    };
+    // Flashcard navigation
+    document.getElementById('prev').onclick = () => {
+      index = (index - 1 + topics[selectedTopic].length) % topics[selectedTopic].length;
+      flipped = false;
+      renderCard();
+      renderProgress();
+    };
+    document.getElementById('next').onclick = () => {
+      index = (index + 1) % topics[selectedTopic].length;
+      flipped = false;
+      renderCard();
+      renderProgress();
+    };
+    document.getElementById('mark-known').onclick = () => {
+      if (!known.includes(index)) known.push(index);
+      index = (index + 1) % topics[selectedTopic].length;
+      flipped = false;
+      renderCard();
+      renderProgress();
+    };
+    document.getElementById('mark-unknown').onclick = () => {
+      const idx = known.indexOf(index);
+      if (idx !== -1) known.splice(idx, 1);
+      index = (index + 1) % topics[selectedTopic].length;
+      flipped = false;
+      renderCard();
+      renderProgress();
+    };
+    document.getElementById('reset').onclick = () => {
+      known = [];
+      renderProgress();
+      renderCard();
+    };
+    document.getElementById('bookmark').onclick = () => {
+      const key = { topic: selectedTopic, index };
+      const exists = bookmarks.some(b => b.topic === key.topic && b.index === key.index);
+      if (exists) bookmarks = bookmarks.filter(b => !(b.topic === key.topic && b.index === key.index));
+      else bookmarks.push(key);
+      renderCard();
+      renderProgress();
+    };
+    document.getElementById('topic-select').onchange = (e) => {
+      selectedTopic = e.target.value;
+      index = 0;
+      known = [];
+      renderCard();
+      renderProgress();
+    };
+    // Add custom flashcard
+    document.getElementById('add-custom').onclick = () => {
+      const q = document.getElementById('custom-question').value.trim();
+      const a = document.getElementById('custom-answer').value.trim();
+      if (q && a) {
+        topics.Custom.push({ question: q, answer: a });
+        document.getElementById('custom-question').value = '';
+        document.getElementById('custom-answer').value = '';
+        populateTopics();
+      }
+    };
+    // Flip card
+    document.getElementById('flashcard').onclick = () => {
+      flipped = !flipped;
+      renderCard();
+    };
+    // Confetti
+    document.getElementById('confetti-btn').onclick = () => {
+      const confetti = document.getElementById('confetti');
+      confetti.innerHTML = '';
+      for(let i=0;i<80;i++) {
+        const d = document.createElement('div');
+        d.className = 'confetti-piece';
+        d.style.left = Math.random()*100+'vw';
+        d.style.top = Math.random()*40+'vh';
+        d.style.background = `hsl(${Math.random()*360},90%,60%)`;
+        d.style.width = d.style.height = (6+Math.random()*8)+'px';
+        d.style.position = 'absolute';
+        d.style.borderRadius = '50%';
+        d.style.opacity = 0.8;
+        confetti.appendChild(d);
+        setTimeout(()=>{d.style.top = '100vh'; d.style.transition = 'top 3.5s cubic-bezier(.4,2,.3,1)';}, 10);
+      }
+      setTimeout(()=>{confetti.innerHTML='';}, 4000);
+    };
+    // Date and clock format toggle
+    let use24Hour = true;
+    function renderDate() {
+      const el = document.getElementById('side-date');
+      const now = new Date();
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      el.textContent = now.toLocaleDateString(undefined, options);
+    }
+    function updateClock() {
+      const el = document.getElementById('side-clock');
+      if (!el) return;
+      const now = new Date();
+      let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+      let ampm = '';
+      if (!use24Hour) {
+        ampm = h >= 12 ? ' PM' : ' AM';
+        h = h % 12;
+        if (h === 0) h = 12;
+      }
+      if (h < 10) h = '0' + h;
+      if (m < 10) m = '0' + m;
+      if (s < 10) s = '0' + s;
+      el.textContent = `🕒 ${h}:${m}:${s}${use24Hour ? '' : ampm}`;
+    }
+    document.getElementById('clock-format-btn').onclick = () => {
+      use24Hour = !use24Hour;
+      document.getElementById('clock-format-btn').textContent = use24Hour ? 'Switch to 12-hour' : 'Switch to 24-hour';
+      updateClock();
+    };
+    setInterval(updateClock, 1000);
+    updateClock();
+    renderDate();
+    // Floating programming icons
+    const icons = [
+      // JavaScript (JS yellow with JS logo)
+      '<svg width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#f7df1e"/><path d="M10 22l2 1c.2.5.6 1.2 1.7 1.2 1.1 0 1.5-.7 1.5-1.3 0-1-1-1.3-2-1.7l-.7-.3c-2-.7-3.3-1.6-3.3-3.5 0-1.7 1.3-3 3.4-3 1.5 0 2.6.5 3.4 2l-1.9 1c-.3-.6-.7-.9-1.5-.9-.7 0-1.1.4-1.1.9 0 .6.4.9 1.4 1.3l.7.3c2.3.8 3.6 1.7 3.6 3.7 0 2.1-1.7 3.2-4 3.2-2.2 0-3.5-1.1-4.2-2.5z" fill="#222"/>',
+      // Python (blue/yellow with python logo)
+      '<svg width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="16" fill="#3572A5"/><path d="M16 7c-2.2 0-4 1.8-4 4v2h8V11c0-2.2-1.8-4-4-4zm-6 4c0-3.3 2.7-6 6-6s6 2.7 6 6v2c0 1.1-.9 2-2 2h-8c-1.1 0-2-.9-2-2v-2zm2 10c0 2.2 1.8 4 4 4s4-1.8 4-4v-2h-8v2zm6 4c3.3 0 6-2.7 6-6v-2c0-1.1-.9-2-2-2h-8c-1.1 0-2 .9-2 2v2c0 3.3 2.7 6 6 6z" fill="#ffd43b"/></svg>',
+      // HTML5
+      '<svg width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="16" fill="#e34c26"/><path d="M10 8l2 14 4 1 4-1 2-14z" fill="#fff"/><path d="M16 21.5l3.2-.9.3-3.2h-3.5v-2h3.7l.2-2h-3.9v-2h4.2l.1-1.2-4.3-1.2z" fill="#e34c26"/></svg>',
+      // CSS3
+      '<svg width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="16" fill="#2965f1"/><path d="M10 8l2 14 4 1 4-1 2-14z" fill="#fff"/><path d="M16 21.5l3.2-.9.3-3.2h-3.5v-2h3.7l.2-2h-3.9v-2h4.2l.1-1.2-4.3-1.2z" fill="#2965f1"/></svg>',
+      // React
+      '<svg width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#222"/><g><ellipse rx="10" ry="4.5" cx="16" cy="16" fill="none" stroke="#61dafb" stroke-width="2.2"/><ellipse rx="10" ry="4.5" cx="16" cy="16" fill="none" stroke="#61dafb" stroke-width="2.2" transform="rotate(60 16 16)"/><ellipse rx="10" ry="4.5" cx="16" cy="16" fill="none" stroke="#61dafb" stroke-width="2.2" transform="rotate(120 16 16)"/><circle cx="16" cy="16" r="2.5" fill="#61dafb"/></g></svg>',
+      // Java
+      '<svg width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="16" fill="#b07219"/><path d="M16 22c-2.5 0-4.5-1-4.5-2.2 0-.7 1.2-1.3 3-1.7l.5-.1.5.1c1.8.4 3 1 3 1.7C20.5 21 18.5 22 16 22zm0-10c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z" fill="#fff"/></svg>',
+      // C++ (C++ blue with C++ symbol)
+      '<svg width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="16" fill="#00599c"/><text x="16" y="22" font-size="14" text-anchor="middle" fill="#fff" font-family="Arial">C++</text></svg>'
+    ];
+    function randomPos() {
+      let x, y;
+      do {
+        x = Math.random();
+        y = Math.random();
+      } while (x > 0.4 && x < 0.6 && y > 0.4 && y < 0.6);
+      return { x, y };
+    }
+    function createFloatingIcon(i) {
+      const { x, y } = randomPos();
+      const div = document.createElement('div');
+      div.className = 'floating-static-icon';
+      div.innerHTML = icons[i % icons.length];
+      div.style.left = (x * 100) + 'vw';
+      div.style.top = (y * 100) + 'vh';
+      div.style.width = div.style.height = '40px';
+      div.style.opacity = 0.8;
+      div.style.zIndex = 6;
+      document.querySelector('.floating-symbols').appendChild(div);
+      let dx = (Math.random() - 0.5) * 0.09;
+      let dy = (Math.random() - 0.5) * 0.09;
+      let fx = x * 100, fy = y * 100;
+      function move() {
+        fx += dx;
+        fy += dy;
+        if (fx > 40 && fx < 60 && fy > 40 && fy < 60) { fx += dx * 2; fy += dy * 2; }
+        if (fx < 0) fx = 100; if (fx > 100) fx = 0;
+        if (fy < 0) fy = 100; if (fy > 100) fy = 0;
+        div.style.left = fx + 'vw';
+        div.style.top = fy + 'vh';
+        requestAnimationFrame(move);
+      }
+      move();
+    }
+    for(let i=0;i<10;i++) createFloatingIcon(i);
+    // Initial render
+    populateTopics();
+    renderCard();
+    renderProgress();
+    // Random tip box
+    const tips = [
+      '💡 Tip: Click the card to flip and reveal the answer!',
+      '✨ Try dark mode for a new look!',
+      '🚀 Mark cards as known to track your progress.',
+      '🎯 Switch topics anytime from the dropdown.',
+      '🧠 Practice makes perfect!',
+      '🌟 Take short breaks for better focus.',
+      '📚 Review your bookmarks for tough questions.',
+      '⏰ Use the timer for focused study sessions.',
+      '👍 Stay positive and keep learning!'
+    ];
+    document.getElementById('tip-box').textContent = tips[Math.floor(Math.random()*tips.length)];
+  </script>
+</body>
+</html>
